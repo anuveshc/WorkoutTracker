@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Workout Tracker</title>
+<meta name="theme-color" content="#1d3fc4">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: focused, quick, made for one hand between sets
+   IDEA: a gym logbook page; week pills behave like bumper plates on a bar
+   PICTURE: the working log itself — set rows with big kg/reps fields
+   COLOUR and TYPE: plate blue band, plate red accent, white/ink; Barlow Condensed + Barlow
+   LAYOUT: blue header (program, weeks, days), cards of exercises, fixed bottom nav */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#0f1115);--ink:light-dark(#14161a,#eef0f3);--mut:light-dark(#646b75,#9aa2ad);--line:light-dark(#e3e6ea,#262a31);--card:light-dark(#f6f7f9,#171a20);--blue:light-dark(#1d3fc4,#1a2f86);--red:#e1251b;--ok:light-dark(#0f7a3f,#36c172);--field:light-dark(#fff,#0f1115)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Barlow,system-ui,sans-serif;overflow-x:clip;padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+h1,h2,h3,.cond{font-family:"Barlow Condensed",Barlow,sans-serif;letter-spacing:.01em}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.top{background:var(--blue);color:#fff;padding:calc(18px + env(safe-area-inset-top)) max(4vw,14px) 0}
+.wrap{max-width:760px;margin:0 auto}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.top h1{font-size:34px;line-height:1.05;margin:0;flex:1}
+#st{font-size:13px;opacity:.85;white-space:nowrap}
+.sub{font-size:15px;opacity:.85;margin:2px 0 14px}
+.plates{display:flex;gap:8px;margin-bottom:14px}
+.plate{flex:1;height:52px;border-radius:12px;border:2px solid rgba(255,255,255,.35);background:transparent;color:#fff;font:700 20px "Barlow Condensed";display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.plate small{font:500 11px Barlow;opacity:.8;margin-top:3px}
+.plate.on{background:#fff;color:var(--blue);border-color:#fff}
+.plate.done:not(.on){border-color:#fff;background:rgba(255,255,255,.14)}
+.days{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.day{flex:none;padding:12px 16px 14px;border:0;background:transparent;color:#fff;opacity:.7;font:700 18px "Barlow Condensed";border-radius:12px 12px 0 0;white-space:nowrap}
+.day.on{background:var(--bg);color:var(--ink);opacity:1}
+.day i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-left:6px;vertical-align:middle;opacity:0}
+.day.has i{opacity:1}
+main{padding:16px max(4vw,14px)}
+.card{background:var(--card);border-radius:16px;padding:14px;margin-bottom:12px}
+.ss{border-left:4px solid var(--red)}
+.chead{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.chead h3{margin:0;font-size:22px;line-height:1.1;flex:1}
+.tag{font:600 13px Barlow;color:var(--red);white-space:nowrap}
+.set{display:grid;grid-template-columns:30px minmax(0,1fr) minmax(0,1fr) 46px;gap:8px;align-items:center;margin-top:6px}
+.set .n{font:700 18px "Barlow Condensed";color:var(--mut);text-align:center}
+.f{position:relative}
+.f input{width:100%;height:46px;border:1.5px solid var(--line);border-radius:10px;background:var(--field);padding:0 46px 0 10px;font-size:18px;font-weight:600;text-align:right}
+.f input::placeholder{color:var(--mut);opacity:.6;font-weight:500}
+.f span{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--mut);pointer-events:none}
+.chk{width:46px;height:46px;border-radius:50%;border:1.5px solid var(--line);background:var(--field);font-size:20px;color:var(--mut)}
+.chk.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.set.ok input{border-color:color-mix(in srgb,var(--ok) 55%,transparent)}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--mut);flex-wrap:wrap}
+.mini{border:0;background:transparent;color:var(--mut);font-size:14px;font-weight:600;padding:8px 10px;min-height:40px;border-radius:8px}
+.mini:hover{background:var(--line)}
+.colhd{display:grid;grid-template-columns:30px minmax(0,1fr) minmax(0,1fr) 46px;gap:8px;font-size:12px;color:var(--mut);text-align:right;padding-right:0}
+.colhd b{font-weight:500;padding-right:12px}
+.nav{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:5}
+.nav button{flex:1;border:0;background:transparent;padding:12px 0 14px;font:700 17px "Barlow Condensed";color:var(--mut);min-height:58px}
+.nav button.on{color:var(--red);box-shadow:inset 0 3px 0 var(--red)}
+h2{font-size:28px;line-height:1.05;margin:4px 0 12px}
+.vol{display:grid;gap:8px;margin-bottom:22px}
+.vr{display:grid;grid-template-columns:62px minmax(0,1fr) 84px;gap:10px;align-items:center;font-size:15px}
+.vr .bar{height:26px;background:var(--line);border-radius:6px;overflow:hidden}
+.vr .bar div{height:100%;background:var(--blue);border-radius:6px}
+.vr .bar div.cur{background:var(--red)}
+.vr b{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left;white-space:normal;min-width:130px}
+th{font-weight:600;color:var(--mut);font-size:13px}
+td.up{color:var(--ok);font-weight:600}
+.muted{color:var(--mut);font-size:14px}
+.plan{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;margin-bottom:8px}
+.plan.on{border-color:var(--blue)}
+.plan div{flex:1}
+.plan b{display:block;font:700 20px "Barlow Condensed"}
+.btn{border:0;border-radius:12px;background:var(--blue);color:#fff;font-weight:600;padding:0 18px;min-height:46px}
+.btn.alt{background:var(--card);color:var(--ink);border:1.5px solid var(--line)}
+.btn.warn{background:var(--red)}
+label{display:block;font-size:14px;font-weight:600;margin:16px 0 6px}
+input.txt,textarea{width:100%;border:1.5px solid var(--line);border-radius:12px;background:var(--field);padding:12px;font-size:16px}
+textarea{min-height:340px;line-height:1.45;font-family:ui-monospace,Menlo,monospace;font-size:15px}
+.banner{background:var(--card);border-left:4px solid var(--red);border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:15px}
+@media(max-width:420px){.top h1{font-size:30px}.f input{padding-right:42px;font-size:17px}.plate{height:48px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="row"><h1 id="pname">Workout</h1><span id="st">Loading…</span></div>
+  <p class="sub" id="psub"></p>
+  <div id="hdr"></div>
+</div></header>
+<main><div class="wrap" id="main"></div></main>
+<nav class="nav">
+  <button data-v="log" class="on">Log</button>
+  <button data-v="prog">Progress</button>
+  <button data-v="plans">Programs</button>
+</nav>
+<script>
+{
+const DEF=`Lower A
+Barbell back squat
+Standing lunge
+Machine deadlift
+Hamstring curl
+Leg extension
+
+Upper A
+Face pull (warm-up)
+Barbell bench press
+Machine row & Cable rope pushdown
+Single-arm Arnold press
+Wide lat pulldown
+Incline machine press & EZ-bar curl
+
+Lower B
+Trap bar deadlift
+Hack squat
+Walking lunge
+Machine hip thrust
+Nordic curl
+
+Upper B
+Face pull (warm-up)
+Flat DB bench press
+Barbell row & Machine tricep dip
+Barbell incline press & Lateral raise
+Narrow lat pulldown
+DB overhead press & Hammer curl`;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=n=>(Math.round(n*10)/10).toLocaleString();
+function parse(t){return t.trim().split(/\n\s*\n/).map(b=>{const L=b.split('\n').map(x=>x.trim()).filter(Boolean);const name=L.shift()||'Day';const ex=[];L.forEach((l,i)=>{const parts=l.split(/\s+&\s+/);parts.forEach(p=>{const m=p.match(/^(.*?)\s+x\s*(\d+)$/i);ex.push({n:m?m[1]:p,s:m?Math.min(+m[2],10):3,g:parts.length>1?i:null})})});return{name,ex}}).filter(d=>d.ex.length)}
+const newProg=(name,text)=>({id:'p'+Date.now(),name,weeks:5,text,log:{},n:{},made:new Date().toISOString().slice(0,10)});
+let S={cur:null,programs:[],t:0};
+{const p=newProg('Nov/Dec 2026',DEF);p.id='p1';S.cur='p1';S.programs=[p]}
+const UI={v:'log',w:1,d:0,del:null,newOpen:false};
+let cache={};
+const P=()=>S.programs.find(p=>p.id===S.cur)||S.programs[0];
+const days=p=>{if(cache.t!==p.text){cache={t:p.text,d:parse(p.text)}}return cache.d};
+const K=(w,d,e,s)=>`${w}|${d}|${e}|${s}`;
+const nSets=(p,w,d,e)=>p.n[`${w}|${d}|${e.n}`]||e.s;
+const dayHas=(p,w,d)=>d.ex.some(e=>{for(let s=0;s<nSets(p,w,d.name,e);s++){const v=p.log[K(w,d.name,e.n,s)];if(v&&(v.k||v.r||v.ok))return true}return false});
+function status(t){$('#st').textContent=t}
+function save(){S.t=Date.now();try{localStorage.setItem('wt-log',JSON.stringify(S));status('Saved on phone ✓')}catch(e){status('Could not save!')}}
+function push(){status('Saved on phone ✓')}
+function pickStart(){const p=P(),D=days(p);let w=1;for(let i=1;i<=p.weeks;i++)if(D.some(d=>dayHas(p,i,d)))w=i;if(D.every(d=>dayHas(p,w,d))&&w<p.weeks)w++;UI.w=w;const i=D.findIndex(d=>!dayHas(p,w,d));UI.d=i<0?0:i}
+
+function header(){const p=P(),D=days(p);$('#pname').textContent=p.name;$('#psub').textContent=`${p.weeks}-week program · ${D.length} training days`;
+ if(UI.v!=='log'){$('#hdr').innerHTML='<div style="height:16px"></div>';return}
+ let h='<div class="plates">';for(let w=1;w<=p.weeks;w++){const done=D.every(d=>dayHas(p,w,d));h+=`<button class="plate${w===UI.w?' on':''}${done?' done':''}" data-w="${w}">${w}<small>${done?'done':'week'}</small></button>`}
+ h+='</div><div class="days">'+D.map((d,i)=>`<button class="day${i===UI.d?' on':''}${dayHas(p,UI.w,d)?' has':''}" data-d="${i}">${esc(d.name)}<i></i></button>`).join('')+'</div>';$('#hdr').innerHTML=h}
+
+function logView(){const p=P(),D=days(p);if(UI.d>=D.length)UI.d=0;const d=D[UI.d];if(!d)return'<p class="muted">Add exercises in Programs.</p>';
+ let h='';const allDone=D.every(x=>dayHas(p,p.weeks,x));
+ if(allDone)h+=`<div class="banner"><b>Program complete.</b> All ${p.weeks} weeks logged — start your next program in <a href="#" data-go="plans">Programs</a>.</div>`;
+ const gl={};let gi=0;d.ex.forEach(e=>{if(e.g!==null&&!(e.g in gl))gl[e.g]=String.fromCharCode(65+gi++)});const pos={};
+ h+=d.ex.map(e=>{let tag='';if(e.g!==null){pos[e.g]=(pos[e.g]||0)+1;tag=`<span class="tag">Superset ${gl[e.g]}${pos[e.g]}</span>`}
+  const n=nSets(p,UI.w,d.name,e),last=[];let rows='';
+  for(let s=0;s<n;s++){const k=K(UI.w,d.name,e.n,s),v=p.log[k]||{},pv=UI.w>1?p.log[K(UI.w-1,d.name,e.n,s)]:null;if(pv&&(pv.k||pv.r))last.push(`${pv.k||'–'}×${pv.r||'–'}`);
+   rows+=`<div class="set${v.ok?' ok':''}"><span class="n">${s+1}</span><div class="f"><input inputmode="decimal" data-k="${esc(k)}" data-f="k" value="${esc(v.k)}" placeholder="${esc(pv?.k||'')}" aria-label="Set ${s+1} weight"><span>kg</span></div><div class="f"><input inputmode="numeric" data-k="${esc(k)}" data-f="r" value="${esc(v.r)}" placeholder="${esc(pv?.r||'')}" aria-label="Set ${s+1} reps"><span>reps</span></div><button class="chk${v.ok?' on':''}" data-ok="${esc(k)}" data-pk="${esc(pv?.k||'')}" data-pr="${esc(pv?.r||'')}" aria-label="Mark set ${s+1} done">✓</button></div>`}
+  const sk=esc(`${UI.w}|${d.name}|${e.n}`);
+  return `<section class="card${e.g!==null?' ss':''}"><div class="chead"><h3>${esc(e.n)}</h3>${tag}</div>${rows}<div class="foot"><span>${UI.w>1?(last.length?'Last week: '+esc(last.join(', ')):'No data last week'):'Week 1 — set your baseline'}</span><span><button class="mini" data-sets="${sk}" data-def="${n}" data-dir="-1">− set</button><button class="mini" data-sets="${sk}" data-def="${n}" data-dir="1">+ set</button></span></div></section>`}).join('');
+ return h+'<p class="muted">Grey numbers are last week\'s. Tap ✓ on an empty set to repeat them.</p>'}
+
+function progView(){const p=P(),D=days(p);const vol=[];for(let w=1;w<=p.weeks;w++){let t=0;for(const k in p.log){if(k.startsWith(w+'|')){const v=p.log[k];t+=(parseFloat(v.k)||0)*(parseFloat(v.r)||0)}}vol.push(t)}
+ const mx=Math.max(...vol,1);
+ let h=`<h2>Weekly volume</h2><div class="vol">`+vol.map((v,i)=>`<div class="vr"><span>Week ${i+1}</span><div class="bar"><div class="${i+1===UI.w?'cur':''}" style="width:${v/mx*100}%"></div></div><b>${v?fmt(v)+' kg':'—'}</b></div>`).join('')+`</div><p class="muted" style="margin-top:-12px">Volume = weight × reps, summed over every set.</p>`;
+ h+=`<h2 style="margin-top:24px">Best set each week</h2>`;
+ D.forEach(d=>{h+=`<h3 class="cond" style="font-size:20px;margin:18px 0 4px">${esc(d.name)}</h3><div class="scroll"><table><thead><tr><th>Exercise</th>${Array.from({length:p.weeks},(_,i)=>`<th>W${i+1}</th>`).join('')}</tr></thead><tbody>`;
+  d.ex.forEach(e=>{let prev=0;let cells='';for(let w=1;w<=p.weeks;w++){let best=null,b1=0;for(let s=0;s<nSets(p,w,d.name,e);s++){const v=p.log[K(w,d.name,e.n,s)];if(!v)continue;const kg=parseFloat(v.k)||0,r=parseFloat(v.r)||0;if(!r)continue;const e1=kg*(1+r/30)||r;if(e1>b1){b1=e1;best=`${kg?fmt(kg):'BW'}×${r}`}}
+   cells+=`<td class="${best&&prev&&b1>prev?'up':''}">${best||'·'}</td>`;if(best)prev=b1}
+   h+=`<tr><td>${esc(e.n)}</td>${cells}</tr>`});h+='</tbody></table></div>'});
+ return h+'<p class="muted">Green means your best set beat the previous logged week (estimated 1-rep max).</p>'}
+
+function plansView(){const p=P();let h='<h2>Programs</h2>'+S.programs.map(q=>`<div class="plan${q.id===p.id?' on':''}"><div><b>${esc(q.name)}</b><span class="muted">${q.weeks} weeks · started ${esc(q.made)}${q.id===p.id?' · current':''}</span></div>${q.id===p.id?'':`<button class="btn alt" data-use="${q.id}">Open</button>`}</div>`).join('');
+ h+=UI.newOpen?`<div class="card" style="margin-top:12px"><label for="nn">New program name</label><input class="txt" id="nn" placeholder="e.g. Jan/Feb 2027"><label for="nw">Weeks</label><input class="txt" id="nw" inputmode="numeric" value="5"><div class="row" style="margin-top:12px"><button class="btn" data-new="copy">Copy current exercises</button><button class="btn alt" data-new="blank">Start blank</button><button class="mini" data-newx>Cancel</button></div></div>`:`<button class="btn" style="margin-top:6px" data-newo>+ New program</button>`;
+ h+=`<h2 style="margin-top:28px">Edit “${esc(p.name)}”</h2><label for="en">Name</label><input class="txt" id="en" value="${esc(p.name)}"><label for="ew">Weeks</label><input class="txt" id="ew" inputmode="numeric" value="${p.weeks}"><label for="et">Exercises</label><p class="muted" style="margin:0 0 8px">One exercise per line, first line of each block is the day name, blank line between days. Join two with “&amp;” for a superset. Add “x4” at the end for 4 sets (default is 3).</p><textarea id="et" spellcheck="false">${esc(p.text)}</textarea><div class="row" style="margin-top:12px"><button class="btn" data-savep>Save changes</button>${S.programs.length>1?`<button class="btn ${UI.del===p.id?'warn':'alt'}" data-delp>${UI.del===p.id?'Tap again to delete':'Delete program'}</button>`:''}</div><p class="muted">Logged sets stay attached to each exercise name, so renaming an exercise starts its history fresh.</p><h2 style="margin-top:28px">Backup</h2><p class="muted" style="margin-top:0">Your data lives only on this phone. Save a backup file now and then, and restore it if you change phones or clear your browser.</p><div class="row"><button class="btn" data-exp>Save backup file</button><button class="btn alt" data-csv>Export CSV</button><label class="btn alt" style="margin:0;display:inline-flex;align-items:center;cursor:pointer">Restore backup<input type="file" accept=".json,application/json" id="imp" hidden></label></div><p class="muted" id="bmsg"></p>`;
+ return h}
+
+function render(){header();$('#main').innerHTML=UI.v==='log'?logView():UI.v==='prog'?progView():plansView();document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===UI.v))}
+
+document.addEventListener('input',ev=>{const t=ev.target;if(!t.dataset.k)return;const p=P();const v=p.log[t.dataset.k]||(p.log[t.dataset.k]={});v[t.dataset.f]=t.value.replace(',', '.').trim();save()});
+document.addEventListener('change',ev=>{const t=ev.target;if(t.dataset.k)header();if(t.id==='imp'&&t.files[0]){const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);if(!o.programs||!o.programs.length)throw 0;S=o;cache={};save();pickStart();render();$('#bmsg').textContent='Backup restored.'}catch(e){$('#bmsg').textContent='That file is not a workout backup.'}};r.readAsText(t.files[0])}});
+function dl(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000)}
+function csv(){const q=s=>'"'+String(s??'').replace(/"/g,'""')+'"';const out=[['Program','Week','Day','Exercise','Set','Weight (kg)','Reps','Done']];S.programs.forEach(p=>{for(const k in p.log){const [w,d,e,s]=k.split('|'),v=p.log[k];if(v.k||v.r)out.push([p.name,w,d,e,+s+1,v.k||'',v.r||'',v.ok?'yes':''])}});return out.map(r=>r.map(q).join(',')).join('\n')}
+document.addEventListener('click',ev=>{const b=ev.target.closest('button,a[data-go]');if(!b)return;const p=P(),x=b.dataset;
+ if(x.go){ev.preventDefault();UI.v=x.go;render();scrollTo(0,0);return}
+ if(x.v){UI.v=x.v;UI.del=null;render();scrollTo(0,0);return}
+ if(x.w){UI.w=+x.w;render();return}
+ if(x.d){UI.d=+x.d;render();scrollTo(0,0);return}
+ if(x.ok){const v=p.log[x.ok]||(p.log[x.ok]={});if(!v.ok){if(!v.k&&x.pk)v.k=x.pk;if(!v.r&&x.pr)v.r=x.pr}v.ok=!v.ok;save();render();return}
+ if(x.sets){const n=Math.max(1,Math.min(10,(p.n[x.sets]||+x.def)+ +x.dir));p.n[x.sets]=n;save();render();return}
+ if(x.use!==undefined){S.cur=x.use;UI.del=null;cache={};pickStart();UI.v='log';save();render();return}
+ if(x.newo!==undefined){UI.newOpen=true;render();return}
+ if(x.newx!==undefined){UI.newOpen=false;render();return}
+ if(x.new){const name=$('#nn').value.trim()||'New program',wk=Math.max(1,Math.min(16,parseInt($('#nw').value)||5));const q=newProg(name,x.new==='copy'?p.text:'Day 1\nExercise one\nExercise two');q.weeks=wk;S.programs.push(q);S.cur=q.id;UI.newOpen=false;UI.w=1;UI.d=0;UI.v=x.new==='copy'?'log':'plans';save();render();scrollTo(0,0);return}
+ if(x.savep!==undefined){p.name=$('#en').value.trim()||p.name;p.weeks=Math.max(1,Math.min(16,parseInt($('#ew').value)||p.weeks));const t=$('#et').value;if(parse(t).length)p.text=t.trim();if(UI.w>p.weeks)UI.w=p.weeks;save();render();status('Saved ✓');return}
+ if(x.exp!==undefined){dl(`workout-backup-${new Date().toISOString().slice(0,10)}.json`,JSON.stringify(S),'application/json');$('#bmsg').textContent='Backup saved to your Downloads.';return}
+ if(x.csv!==undefined){dl(`workouts-${new Date().toISOString().slice(0,10)}.csv`,csv(),'text/csv');$('#bmsg').textContent='CSV saved to your Downloads — open it in Google Sheets.';return}
+ if(x.delp!==undefined){if(UI.del!==p.id){UI.del=p.id;render();return}S.programs=S.programs.filter(q=>q.id!==p.id);S.cur=S.programs[0].id;UI.del=null;cache={};pickStart();save();render();return}
+});
+
+try{const c=localStorage.getItem('wt-log');if(c){const o=JSON.parse(c);if(o&&o.programs&&o.programs.length)S=o}}catch(e){}
+pickStart();render();status('Saved on phone ✓');
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
